@@ -7,7 +7,7 @@ describe('splitCsvLine', () => {
   });
 
   it('respects quoted fields containing the delimiter', () => {
-    expect(splitCsvLine('"Sharma, Akshat",akshat@acme.io')).toEqual(['Sharma, Akshat', 'akshat@acme.io']);
+    expect(splitCsvLine('"Singh, Adyasha",adyasha@acme.io')).toEqual(['Singh, Adyasha', 'adyasha@acme.io']);
   });
 
   it('unescapes doubled quotes', () => {
@@ -31,10 +31,10 @@ describe('isValidEmail', () => {
 
 describe('parseLeads', () => {
   it('parses a CSV with a header row and a name column', () => {
-    const result = parseLeads('name,email\nAkshat Sharma,akshat@acme.io\nAdyasha Singh,adyasha@acme.io');
+    const result = parseLeads('name,email\nAdyasha Singh,adyasha@acme.io\nRohan Mehta,rohan@acme.io');
     expect(result.leads).toEqual([
-      { email: 'akshat@acme.io', name: 'Akshat Sharma' },
       { email: 'adyasha@acme.io', name: 'Adyasha Singh' },
+      { email: 'rohan@acme.io', name: 'Rohan Mehta' },
     ]);
   });
 
@@ -44,7 +44,7 @@ describe('parseLeads', () => {
   });
 
   it('does not mistake a first data row for a header', () => {
-    const result = parseLeads('akshat@acme.io\nadyasha@acme.io');
+    const result = parseLeads('adyasha@acme.io\nrohan@acme.io');
     expect(result.leads).toHaveLength(2);
   });
 
@@ -77,8 +77,8 @@ describe('parseLeads', () => {
   });
 
   it('strips a UTF-8 BOM and CRLF line endings from an Excel export', () => {
-    const result = parseLeads('﻿email\r\nakshat@acme.io\r\nadyasha@acme.io\r\n');
-    expect(result.leads.map((l) => l.email)).toEqual(['akshat@acme.io', 'adyasha@acme.io']);
+    const result = parseLeads('﻿email\r\nadyasha@acme.io\r\nrohan@acme.io\r\n');
+    expect(result.leads.map((l) => l.email)).toEqual(['adyasha@acme.io', 'rohan@acme.io']);
   });
 
   it('strips a mailto: prefix', () => {
@@ -95,17 +95,17 @@ describe('parseLeads -- mixed-format files', () => {
   it('salvages a row that ignores the header column layout', () => {
     // Row 3 is a single cell in display-name form, not the declared 2 columns.
     const result = parseLeads(
-      'name,email\nAkshat Sharma,akshat@example.com\n"Priya Nair" <priya@example.com>',
+      'name,email\nAdyasha Singh,adyasha@example.com\n"Priya Nair" <priya@example.com>',
     );
     expect(result.leads).toEqual([
-      { email: 'akshat@example.com', name: 'Akshat Sharma' },
+      { email: 'adyasha@example.com', name: 'Adyasha Singh' },
       { email: 'priya@example.com', name: 'Priya Nair' },
     ]);
     expect(result.invalidCount).toBe(0);
   });
 
   it('still reports a row with no address at all as invalid', () => {
-    const result = parseLeads('name,email\nAkshat Sharma,akshat@example.com\nbroken-row');
+    const result = parseLeads('name,email\nAdyasha Singh,adyasha@example.com\nbroken-row');
     expect(result.leads).toHaveLength(1);
     expect(result.invalidCount).toBe(1);
   });

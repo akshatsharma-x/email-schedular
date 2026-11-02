@@ -70,8 +70,8 @@ async function resolveUserId(email?: string): Promise<{ id: string; name: string
   const [existing] = await db.select().from(users).orderBy(users.createdAt).limit(1);
   if (existing) return { id: existing.id, name: existing.name };
   const created = await upsertUser({
-    email: 'akshat.sharma@outbox.local',
-    name: 'Akshat Sharma',
+    email: 'adyasha.singh@outbox.local',
+    name: 'Adyasha Singh',
   });
   return { id: created.id, name: created.name };
 }

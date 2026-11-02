@@ -423,7 +423,7 @@ export function Composer({
                 }
               }}
               onBlur={commitManual}
-              placeholder={recipients.length === 0 ? 'adyasha.singh@example.com' : ''}
+              placeholder={recipients.length === 0 ? 'rohan.mehta@example.com' : ''}
               className="min-w-[10rem] flex-1"
             />
           </div>

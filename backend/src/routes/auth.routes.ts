@@ -88,8 +88,8 @@ authRouter.get(
  * production -- so this cannot become an authentication bypass by accident.
  */
 const devLoginBody = z.object({
-  email: z.string().email().default('akshat.sharma@outbox.local'),
-  name: z.string().min(1).default('Akshat Sharma'),
+  email: z.string().email().default('adyasha.singh@outbox.local'),
+  name: z.string().min(1).default('Adyasha Singh'),
 });
 
 authRouter.post(
