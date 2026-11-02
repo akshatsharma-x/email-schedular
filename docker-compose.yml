@@ -1,0 +1,81 @@
+# =============================================================================
+# Infrastructure for local development: Postgres, Redis, Elasticsearch.
+#
+#   docker compose up -d
+#
+# The application itself runs on the host (`npm run dev`), so you get fast
+# reloads while the stateful services stay containerised. Redis is configured
+# with AOF persistence on purpose -- see the note below.
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: outbox-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: outbox
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      # `pg_isready` alone returns true before the DB accepts writes on first
+      # boot, so the app can race the init scripts. Checking a real query avoids
+      # a migration failing on a half-started server.
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d outbox && psql -U postgres -d outbox -c "select 1" > /dev/null']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: outbox-redis
+    restart: unless-stopped
+    # appendonly yes is the important part: BullMQ's delayed-job set lives in
+    # Redis, and without AOF a container restart silently drops every scheduled
+    # email. The app's reconciler can rebuild from Postgres either way, but
+    # durable Redis means it never has to.
+    command: redis-server --appendonly yes --appendfsync everysec
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.17.0
+    container_name: outbox-elasticsearch
+    restart: unless-stopped
+    environment:
+      - discovery.type=single-node
+      # Security off for local development only. Never do this in production.
+      - xpack.security.enabled=false
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+      - bootstrap.memory_lock=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - '9200:9200'
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ['CMD-SHELL', 'curl -s http://localhost:9200/_cluster/health | grep -qE "green|yellow"']
+      interval: 10s
+      timeout: 5s
+      # ES is slow to start; allow a generous window before marking unhealthy.
+      retries: 20
+      start_period: 40s
+
+volumes:
+  postgres-data:
+  redis-data:
+  elasticsearch-data:

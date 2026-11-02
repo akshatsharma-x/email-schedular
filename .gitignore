@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# environment -- never commit real credentials
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# build output
+dist/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# uploaded attachments -- user data, never committed
+backend/uploads/
+uploads/
+
+# logs
+*.log
+npm-debug.log*
+logs/
+
+# testing
+coverage/
+
+# editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# Next.js generated agent rules
+AGENTS.md
