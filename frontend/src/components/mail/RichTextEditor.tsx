@@ -71,6 +71,19 @@ export function RichTextEditor({
   /** Reflects which marks apply at the caret, so the toolbar shows state. */
   const syncActive = useCallback(() => {
     if (typeof document.queryCommandState !== 'function') return;
+
+    // queryCommandState reports the state of whatever is focused, which is a
+    // different element once the user clicks into Subject or To. Without this
+    // guard the toolbar keeps showing a stale "Bold on" while the caret is
+    // nowhere near the body.
+    const selection = document.getSelection();
+    const inEditor =
+      selection?.anchorNode && ref.current?.contains(selection.anchorNode);
+    if (!inEditor) {
+      setActive({});
+      return;
+    }
+
     const read = (cmd: string): boolean => {
       try {
         return document.queryCommandState(cmd);

@@ -248,6 +248,7 @@ function Mail(): ReactNode {
               setFolder('scheduled');
               refresh();
             }}
+            onSendersChanged={refresh}
           />
         ) : pane === 'detail' ? (
           <MailDetail

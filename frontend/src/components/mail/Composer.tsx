@@ -45,11 +45,14 @@ export function Composer({
   defaults,
   onClose,
   onScheduled,
+  onSendersChanged,
 }: {
   senders: SenderRow[];
   defaults: { minDelayMs: number; perSenderHourly: number };
   onClose: () => void;
   onScheduled: () => void;
+  /** Refetches the sender list after one is provisioned from here. */
+  onSendersChanged: () => void;
 }): ReactNode {
   const { push } = useToast();
 
@@ -76,6 +79,7 @@ export function Composer({
   const [scheduleAt, setScheduleAt] = useState<Date | null>(null);
   const [laterOpen, setLaterOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [addingSender, setAddingSender] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const listInput = useRef<HTMLInputElement>(null);
@@ -155,6 +159,37 @@ export function Composer({
     await api.deleteAttachment(id).catch(() => undefined);
   };
 
+  /**
+   * A brand-new account owns no senders, so scheduling is blocked on first run --
+   * including for a reviewer who has just logged in with Google for the first
+   * time. Pointing at a drawer they have to go find is a dead end, so the fix is
+   * offered inline, right where the block happens.
+   */
+  const addSenderInline = async (): Promise<void> => {
+    setAddingSender(true);
+    try {
+      const result = await api.createEtherealSender();
+      // Select it immediately: the user asked for a sender because they want to
+      // send from one.
+      setSenderId(result.sender.id);
+      onSendersChanged();
+      push({
+        tone: 'success',
+        title: 'Sender ready',
+        description: `${result.sender.fromEmail} — read its delivered mail at ethereal.email.`,
+        action: { label: 'Ethereal login', href: result.etherealLogin.url },
+      });
+    } catch (err) {
+      push({
+        tone: 'error',
+        title: 'Could not add a sender',
+        description: err instanceof ApiError ? err.message : 'Unknown error',
+      });
+    } finally {
+      setAddingSender(false);
+    }
+  };
+
   // ---- submit -------------------------------------------------------------
   function validate(): boolean {
     const next: Record<string, string> = {};
@@ -165,6 +200,7 @@ export function Composer({
     if (!Number.isFinite(delay) || delay < 0) next.delay = 'Seconds, 0 or more';
     const limit = Number(hourlyLimit);
     if (!Number.isInteger(limit) || limit < 1) next.hourly = 'Whole number, 1 or more';
+    if (activeSenders.length === 0) next.from = 'Add a sender before scheduling';
     setErrors(next);
     return Object.keys(next).length === 0;
   }
@@ -261,6 +297,12 @@ export function Composer({
           variant="outline"
           size="sm"
           loading={sending}
+          // Disabled rather than letting the click fail server-side with
+          // "No active senders configured".
+          disabled={activeSenders.length === 0}
+          title={
+            activeSenders.length === 0 ? 'Add a sender before scheduling' : undefined
+          }
           onClick={() => void submit(scheduleAt)}
           className="rounded-full"
         >
@@ -270,11 +312,23 @@ export function Composer({
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-2 sm:px-6 sm:py-4">
         {/* ---- From ---- */}
-        <Row label="From">
+        <Row label="From" error={errors.from}>
           {activeSenders.length === 0 ? (
-            <span className="text-[13px] text-failed">
-              No active senders — add one from Senders &amp; limits
-            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[13px] text-ink-secondary">
+                {senders.length === 0
+                  ? 'No sender yet — one is needed to send.'
+                  : 'All senders are paused.'}
+              </span>
+              <Button
+                size="sm"
+                variant="soft"
+                loading={addingSender}
+                onClick={() => void addSenderInline()}
+              >
+                Add Ethereal sender
+              </Button>
+            </div>
           ) : (
             <div className="relative">
               <select
