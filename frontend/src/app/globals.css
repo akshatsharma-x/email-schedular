@@ -1,0 +1,225 @@
+@import 'tailwindcss';
+
+/*
+ * Design tokens.
+ *
+ * Light is the default (matching the design); dark is a selected set stepped for
+ * a dark surface, not an automatic inversion. Both are driven by the same role
+ * names, so components never reference a raw hex or a `dark:` variant.
+ *
+ * Colours were measured off the design and then checked with a contrast /
+ * colour-blindness validator rather than eyeballed. Two results shaped them:
+ *
+ *   1. The design's green (#05a63f) gives white text only 3.21:1 -- below the
+ *      4.5:1 needed for button labels. `--brand-strong` (#037d2e) reads as the
+ *      same green and clears 5.28:1, so it carries anything with text on it,
+ *      while #05a63f stays for dots, borders and icon accents.
+ *   2. Green and amber are the classic deuteranopia confusion (ΔE 4.1), and a
+ *      green-brand mail client needs both (sent / scheduled). Hue is therefore
+ *      never load-bearing: every status renders an icon *and* a word.
+ */
+
+@theme {
+  /* --- surfaces --- */
+  --color-canvas: #f7f8f7;
+  --color-surface: #ffffff;
+  --color-muted: #f5f7f5;
+  --color-chip: #f3f4f6;
+  --color-hover: #f0f2f0;
+
+  /* --- brand (green) --- */
+  --color-brand: #05a63f;
+  --color-brand-strong: #037d2e;
+  --color-brand-soft: #e5f7ec;
+  --color-brand-border: #32b762;
+
+  /* --- ink --- */
+  --color-ink: #101828;
+  --color-ink-secondary: #5d6976;
+  --color-ink-muted: #878c92;
+
+  /* --- lines --- */
+  --color-line: #e4e7ec;
+  --color-line-strong: #d0d5dd;
+
+  /* --- status (always paired with an icon + label) --- */
+  --color-sent: #037d2e;
+  --color-scheduled: #92400e;
+  --color-failed: #e11d48;
+  --color-scheduled-dot: #f59e0b;
+  --color-highlight: #fefce8;
+
+  --font-sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/*
+ * Dark theme.
+ *
+ * Scoped to [data-theme='dark'] on <html>, set before first paint by an inline
+ * script in the layout -- so a dark-mode user never sees a white flash.
+ */
+[data-theme='dark'] {
+  --color-canvas: #0b0c0f;
+  --color-surface: #15171c;
+  --color-muted: #1d2026;
+  --color-chip: #22262d;
+  --color-hover: #1f232a;
+
+  --color-brand: #34d17a;
+  --color-brand-strong: #34d17a;
+  --color-brand-soft: #11291c;
+  --color-brand-border: #2a9d5c;
+
+  --color-ink: #e8eaed;
+  --color-ink-secondary: #a3abb8;
+  --color-ink-muted: #7b8494;
+
+  --color-line: #262a31;
+  --color-line-strong: #343942;
+
+  --color-sent: #34d17a;
+  --color-scheduled: #f0a52e;
+  --color-failed: #fb6a7e;
+  --color-scheduled-dot: #f0a52e;
+  --color-highlight: #2a2616;
+}
+
+/* ---------------------------------------------------------------- base ---- */
+
+html {
+  background-color: var(--color-canvas);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+::before,
+::after {
+  border-color: var(--color-line);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-brand-strong);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--color-brand) 28%, transparent);
+}
+
+/* Inputs must not revert to the UA's light styling in dark mode. */
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-line-strong);
+  border-radius: 9999px;
+  border: 2px solid var(--color-surface);
+}
+
+/* ------------------------------------------------------------ utilities ---- */
+
+/* Columns of numbers align only with tabular figures. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The rich-text editor's placeholder, since contenteditable has none. */
+[contenteditable][data-placeholder]:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-ink-muted);
+  pointer-events: none;
+}
+
+/* Lists inside the editor and the rendered email body. */
+.prose-mail ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.prose-mail ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+.prose-mail a {
+  color: var(--color-brand-strong);
+  text-decoration: underline;
+}
+.prose-mail blockquote {
+  border-left: 3px solid var(--color-line-strong);
+  padding-left: 0.875rem;
+  margin: 0.5rem 0;
+  color: var(--color-ink-secondary);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-in {
+  animation: fade-in 0.16s ease-out;
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-toast {
+  animation: slide-in 0.2s ease-out;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+.animate-pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in,
+  .animate-toast,
+  .animate-pulse-dot {
+    animation: none;
+  }
+}
