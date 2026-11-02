@@ -47,7 +47,28 @@ function Mail(): ReactNode {
   const params = useSearchParams();
   const { push } = useToast();
 
-  const [folder, setFolder] = useState<MailFolder>('scheduled');
+  /**
+   * The selected folder lives in the URL.
+   *
+   * Keeping it in component state alone means a refresh silently drops the user
+   * back on Scheduled -- they lose their place, and a folder cannot be linked or
+   * reopened in a new tab. `?folder=sent` fixes both.
+   */
+  const folderParam = params.get('folder');
+  const folder: MailFolder =
+    folderParam === 'sent' || folderParam === 'starred' || folderParam === 'scheduled'
+      ? folderParam
+      : 'scheduled';
+
+  const setFolder = useCallback(
+    (next: MailFolder) => {
+      const search = new URLSearchParams(Array.from(params.entries()));
+      search.set('folder', next);
+      // replace, not push: flipping folders should not fill the back button.
+      router.replace(`/dashboard?${search.toString()}`);
+    },
+    [params, router],
+  );
   const [pane, setPane] = useState<Pane>('list');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -173,9 +194,9 @@ function Mail(): ReactNode {
           },
     );
     refresh();
-    // Clear the query string so a reload does not re-toast.
-    router.replace('/dashboard');
-  }, [params, push, refresh, router]);
+    // Drop the slack params so a reload does not re-toast, but keep the folder.
+    router.replace(`/dashboard?folder=${folder}`);
+  }, [params, push, refresh, router, folder]);
 
   // ---- actions ------------------------------------------------------------
   async function logout(): Promise<void> {

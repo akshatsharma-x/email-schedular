@@ -70,6 +70,15 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const envelope = payload as ErrorEnvelope | null;
+
+    // A 401 from *any* call means the session is gone -- expired, cleared, or
+    // pointing at an account that no longer exists. Showing a toast and staying
+    // put leaves the user on a dashboard where every action fails; the only
+    // thing that fixes it is signing in again, so go there.
+    if (res.status === 401 && typeof window !== 'undefined') {
+      redirectToLogin();
+    }
+
     throw new ApiError(
       res.status,
       envelope?.error?.code ?? 'UNKNOWN',
@@ -79,6 +88,18 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   return payload as T;
+}
+
+/**
+ * Sends the browser to the login screen once, even if several in-flight
+ * requests all 401 at the same moment.
+ */
+let redirecting = false;
+function redirectToLogin(): void {
+  if (redirecting) return;
+  if (window.location.pathname.startsWith('/login')) return;
+  redirecting = true;
+  window.location.replace('/login?error=Your+session+expired.+Please+sign+in+again.');
 }
 
 const qs = (params: Record<string, string | number | string[] | undefined>): string => {

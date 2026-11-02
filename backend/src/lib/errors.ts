@@ -64,6 +64,32 @@ export function errorHandler(
     return;
   }
 
+  // Postgres constraint violations are usually a client-correctable situation,
+  // not a server fault. Reporting them as a bare 500 ("something went wrong on
+  // our side") tells the user nothing they can act on.
+  const pg = err as { code?: string; constraint?: string } | null;
+  if (pg?.code === '23503') {
+    logger.warn(
+      { constraint: pg.constraint, path: req.path },
+      'foreign key violation -- referenced row is gone',
+    );
+    res.status(409).json({
+      error: {
+        code: 'STALE_REFERENCE',
+        message:
+          'Something this action referred to no longer exists. Sign out and back in, then try again.',
+      },
+    });
+    return;
+  }
+  if (pg?.code === '23505') {
+    logger.warn({ constraint: pg.constraint, path: req.path }, 'unique violation');
+    res.status(409).json({
+      error: { code: 'ALREADY_EXISTS', message: 'That already exists.' },
+    });
+    return;
+  }
+
   logger.error({ err, path: req.path, method: req.method }, 'unhandled error');
   res.status(500).json({
     error: { code: 'INTERNAL_ERROR', message: 'Something went wrong on our side' },

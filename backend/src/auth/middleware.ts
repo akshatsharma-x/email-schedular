@@ -1,5 +1,8 @@
 import type { NextFunction, Request, Response } from 'express';
+import { eq } from 'drizzle-orm';
 import { env } from '../config/env.js';
+import { db } from '../db/client.js';
+import { users } from '../db/schema.js';
 import { unauthorized } from '../lib/errors.js';
 import { verifySession } from './jwt.js';
 
@@ -36,6 +39,21 @@ export async function attachUser(
   }
   try {
     const claims = await verifySession(token);
+
+    // A valid signature is not enough: the subject must still exist.
+    //
+    // Sessions are stateless JWTs, so a cookie outlives the row it points at --
+    // after the account is deleted (or the database is reset between
+    // environments) the token still verifies. Without this check the app looks
+    // logged in and then fails every write with a foreign-key violation
+    // surfaced as a 500, which is impossible for the user to act on. Returning
+    // "not logged in" instead sends them to the login screen, which is the
+    // thing that actually fixes it.
+    if (!(await userExists(claims.sub))) {
+      next();
+      return;
+    }
+
     req.user = {
       id: claims.sub,
       email: claims.email,
@@ -47,6 +65,37 @@ export async function attachUser(
     // error, so a stale tab just gets redirected to the login screen.
   }
   next();
+}
+
+/**
+ * Existence check with a short TTL cache.
+ *
+ * This runs on every authenticated request, so it is cached to keep the hot path
+ * off the database. 30 seconds is the window in which a just-deleted account can
+ * still act -- acceptable, because the check exists to stop a *stale* session
+ * from producing 500s, not to be a revocation mechanism.
+ */
+const EXISTS_TTL_MS = 30_000;
+const existsCache = new Map<string, number>();
+
+async function userExists(userId: string): Promise<boolean> {
+  const cachedAt = existsCache.get(userId);
+  if (cachedAt && Date.now() - cachedAt < EXISTS_TTL_MS) return true;
+
+  const [row] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+
+  if (!row) {
+    existsCache.delete(userId);
+    return false;
+  }
+  existsCache.set(userId, Date.now());
+  // Bound the cache so a long-running process cannot grow it without limit.
+  if (existsCache.size > 10_000) existsCache.clear();
+  return true;
 }
 
 export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
