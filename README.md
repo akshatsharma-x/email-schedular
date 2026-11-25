@@ -7,6 +7,11 @@ list + reading pane + composer) with light and dark themes.
 
 Built for the ReachInbox full-stack assignment. No cron anywhere.
 
+<p align="center">
+  <img src="docs/screenshots/scheduled.png" alt="Scheduled folder: ten emails queued for 10:00 AM and 3:00 PM. Emails that share a sender are spaced two seconds apart." width="100%">
+</p>
+<p align="center"><sub>Scheduled emails, each with its planned send time. Two senders share the load, and emails from the same sender are spaced two seconds apart.</sub></p>
+
 ```
 outbox/
 ├── backend/      Express API + BullMQ worker (TypeScript)
@@ -18,6 +23,7 @@ outbox/
 
 ## Table of contents
 
+- [Screenshots](#screenshots)
 - [Quick start](#quick-start)
 - [Configuration](#configuration)
 - [Setting up Ethereal, Google and Slack](#setting-up-ethereal-google-and-slack)
@@ -32,6 +38,25 @@ outbox/
 - [Verifying it works](#verifying-it-works)
 - [Tests](#tests)
 - [Assumptions, trade-offs and known limits](#assumptions-trade-offs-and-known-limits)
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%" valign="top"><b>Sent</b><br><sub>Every delivery with its send time. Failed sends land here too.</sub><br><br><img src="docs/screenshots/sent.png" alt="Sent folder listing delivered emails with their send times"></td>
+    <td width="50%" valign="top"><b>Reading pane</b><br><sub>The delivered message, with its formatting and attachment.</sub><br><br><img src="docs/screenshots/reading-pane.png" alt="An opened email showing sender, formatted body and an image attachment"></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>Compose</b><br><sub>Leads from a CSV, with duplicates and invalid rows counted. Pacing controls and Send Later.</sub><br><br><img src="docs/screenshots/compose-send-later.png" alt="Composer with recipient chips, parse summary, formatting and the Send Later picker open"></td>
+    <td width="50%" valign="top"><b>Dark mode</b><br><sub>Toggled from the top bar, and remembered across reloads.</sub><br><br><img src="docs/screenshots/dark-mode.png" alt="The Scheduled folder in dark mode"></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><b>Senders &amp; limits</b><br><sub>Each sender's hourly quota, read live from the rate limiter's Redis counters.</sub><br><br><img src="docs/screenshots/senders-and-limits.png" alt="Drawer showing throughput settings, per-sender hourly quota meters, Slack and recovery"></td>
+    <td width="50%" valign="top"><b>BullMQ board</b><br><sub>Scheduled emails held as delayed jobs, each with its run time.</sub><br><br><img src="docs/screenshots/bullmq-board.png" alt="BullMQ dashboard on the Delayed tab, listing scheduled email jobs and their run times"></td>
+  </tr>
+</table>
 
 ---
 
