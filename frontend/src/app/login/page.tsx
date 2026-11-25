@@ -55,8 +55,8 @@ function LoginScreen(): ReactNode {
     setBusy(true);
     try {
       await api.devLogin({
-        email: email.trim() || 'adyasha.singh@outbox.local',
-        name: email.trim() ? prettyName(email) : 'Adyasha Singh',
+        email: email.trim() || 'akshat.sharma@outbox.local',
+        name: email.trim() ? prettyName(email) : 'Akshat Sharma',
       });
       router.replace('/dashboard');
     } catch (err) {
@@ -133,7 +133,7 @@ function LoginScreen(): ReactNode {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="adyasha.singh@outbox.local"
+                      placeholder="akshat.sharma@outbox.local"
                       autoComplete="email"
                     />
                   )}
