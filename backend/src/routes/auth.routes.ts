@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
+import { DEMO_IDENTITY } from '../config/demo.js';
 import { env, googleOAuthConfigured } from '../config/env.js';
 import { buildAuthUrl, completeLogin, upsertUser } from '../auth/google.js';
 import { sessionCookieOptions, signSession } from '../auth/jwt.js';
@@ -20,6 +21,8 @@ authRouter.get('/config', (_req, res) => {
   res.json({
     googleEnabled: googleOAuthConfigured,
     devBypassEnabled: env.DEV_AUTH_BYPASS,
+    // Lets the login page show the demo address without hardcoding its own copy.
+    devLoginEmail: env.DEV_AUTH_BYPASS ? DEMO_IDENTITY.email : null,
   });
 });
 
@@ -88,8 +91,8 @@ authRouter.get(
  * production -- so this cannot become an authentication bypass by accident.
  */
 const devLoginBody = z.object({
-  email: z.string().email().default('akshat.sharma@outbox.local'),
-  name: z.string().min(1).default('Akshat Sharma'),
+  email: z.string().email().default(DEMO_IDENTITY.email),
+  name: z.string().min(1).default(DEMO_IDENTITY.name),
 });
 
 authRouter.post(

@@ -117,7 +117,7 @@ export const api = {
   // ---- auth ----
   authConfig: () => request<AuthConfig>('/api/auth/config'),
   me: () => request<{ user: AuthUser }>('/api/auth/me'),
-  devLogin: (body: { email: string; name: string }) =>
+  devLogin: (body: { email?: string; name?: string }) =>
     request<{ user: AuthUser }>('/api/auth/dev-login', {
       method: 'POST',
       body: JSON.stringify(body),

@@ -5,6 +5,7 @@ import { runMigrations } from '../db/migrate.js';
 import { senders, users } from '../db/schema.js';
 import { upsertUser } from '../auth/google.js';
 import { logger } from '../lib/logger.js';
+import { DEMO_IDENTITY } from '../config/demo.js';
 
 const log = logger.child({ script: 'create-ethereal-senders' });
 
@@ -69,10 +70,7 @@ async function resolveUserId(email?: string): Promise<{ id: string; name: string
   }
   const [existing] = await db.select().from(users).orderBy(users.createdAt).limit(1);
   if (existing) return { id: existing.id, name: existing.name };
-  const created = await upsertUser({
-    email: 'akshat.sharma@outbox.local',
-    name: 'Akshat Sharma',
-  });
+  const created = await upsertUser({ ...DEMO_IDENTITY });
   return { id: created.id, name: created.name };
 }
 

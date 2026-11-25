@@ -54,10 +54,11 @@ function LoginScreen(): ReactNode {
   async function devLogin(): Promise<void> {
     setBusy(true);
     try {
-      await api.devLogin({
-        email: email.trim() || 'akshat.sharma@outbox.local',
-        name: email.trim() ? prettyName(email) : 'Akshat Sharma',
-      });
+      // Blank means "the demo account". Sending nothing lets the server apply
+      // its own default, so the identity is defined in one place and a stale
+      // copy of this page cannot sign into an account that no longer exists.
+      const typed = email.trim();
+      await api.devLogin(typed ? { email: typed, name: prettyName(typed) } : {});
       router.replace('/dashboard');
     } catch (err) {
       push({
@@ -133,7 +134,7 @@ function LoginScreen(): ReactNode {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="akshat.sharma@outbox.local"
+                      placeholder={config?.devLoginEmail ?? 'you@example.com'}
                       autoComplete="email"
                     />
                   )}

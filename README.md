@@ -99,7 +99,8 @@ npm run dev                  # http://localhost:3000
 | Prometheus metrics | <http://localhost:4000/metrics> |
 
 Without Google credentials, set `DEV_AUTH_BYPASS=true` in `backend/.env` and use
-**Continue as demo user** to exercise the whole dashboard. That endpoint refuses
+leave the email blank and click **Login** to sign in as the demo account
+(Akshat Sharma) and exercise the whole dashboard. That endpoint refuses
 to run when `NODE_ENV=production` — config validation rejects the combination at
 boot, so it cannot become an auth bypass by accident.
 

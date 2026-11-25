@@ -38,6 +38,8 @@ export interface AuthUser {
 export interface AuthConfig {
   googleEnabled: boolean;
   devBypassEnabled: boolean;
+  /** Address the blank-field dev login signs into; null when dev login is off. */
+  devLoginEmail: string | null;
 }
 
 export interface EmailRow {

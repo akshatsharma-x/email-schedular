@@ -49,17 +49,17 @@ export async function attachUser(
     // surfaced as a 500, which is impossible for the user to act on. Returning
     // "not logged in" instead sends them to the login screen, which is the
     // thing that actually fixes it.
-    if (!(await userExists(claims.sub))) {
+    //
+    // The same lookup supplies the profile. The token proves *who* this is, but
+    // its name/email claims are frozen at sign-in, so reading them made a
+    // renamed account keep showing its old name until the session expired.
+    const profile = await loadProfile(claims.sub);
+    if (!profile) {
       next();
       return;
     }
 
-    req.user = {
-      id: claims.sub,
-      email: claims.email,
-      name: claims.name,
-      picture: claims.picture,
-    };
+    req.user = profile;
   } catch {
     // An expired or tampered cookie is treated as "not logged in" rather than an
     // error, so a stale tab just gets redirected to the login screen.
@@ -68,34 +68,42 @@ export async function attachUser(
 }
 
 /**
- * Existence check with a short TTL cache.
+ * Profile lookup with a short TTL cache.
  *
  * This runs on every authenticated request, so it is cached to keep the hot path
- * off the database. 30 seconds is the window in which a just-deleted account can
- * still act -- acceptable, because the check exists to stop a *stale* session
- * from producing 500s, not to be a revocation mechanism.
+ * off the database. 30 seconds is how long a just-deleted account can still act,
+ * or a renamed one still shows its old name -- acceptable, because this exists to
+ * stop a stale session producing 500s and stale headers, not to be a revocation
+ * mechanism.
  */
-const EXISTS_TTL_MS = 30_000;
-const existsCache = new Map<string, number>();
+const PROFILE_TTL_MS = 30_000;
+const profileCache = new Map<string, { user: AuthUser; at: number }>();
 
-async function userExists(userId: string): Promise<boolean> {
-  const cachedAt = existsCache.get(userId);
-  if (cachedAt && Date.now() - cachedAt < EXISTS_TTL_MS) return true;
+async function loadProfile(userId: string): Promise<AuthUser | null> {
+  const cached = profileCache.get(userId);
+  if (cached && Date.now() - cached.at < PROFILE_TTL_MS) return cached.user;
 
   const [row] = await db
-    .select({ id: users.id })
+    .select({ id: users.id, email: users.email, name: users.name, avatarUrl: users.avatarUrl })
     .from(users)
     .where(eq(users.id, userId))
     .limit(1);
 
   if (!row) {
-    existsCache.delete(userId);
-    return false;
+    profileCache.delete(userId);
+    return null;
   }
-  existsCache.set(userId, Date.now());
+
+  const user: AuthUser = {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    picture: row.avatarUrl ?? undefined,
+  };
   // Bound the cache so a long-running process cannot grow it without limit.
-  if (existsCache.size > 10_000) existsCache.clear();
-  return true;
+  if (profileCache.size > 10_000) profileCache.clear();
+  profileCache.set(userId, { user, at: Date.now() });
+  return user;
 }
 
 export function requireAuth(req: Request, _res: Response, next: NextFunction): void {
