@@ -96,7 +96,7 @@ npm run dev                  # http://localhost:3000
 | Dashboard | <http://localhost:3000> |
 | Live BullMQ board | <http://localhost:4000/admin/queues> |
 | Health / readiness | <http://localhost:4000/health> · <http://localhost:4000/ready> |
-| Prometheus metrics | <http://localhost:4000/metrics> |
+| Prometheus metrics | API <http://localhost:4000/metrics> · worker <http://localhost:4001/metrics> |
 
 Without Google credentials, set `DEV_AUTH_BYPASS=true` in `backend/.env` and use
 leave the email blank and click **Login** to sign in as the demo account
@@ -115,6 +115,7 @@ than silently defaulting (see [`config/env.ts`](backend/src/config/env.ts)).
 | Variable | Default | What it does |
 |---|---|---|
 | `WORKER_CONCURRENCY` | `5` | Email jobs one worker sends in parallel |
+| `WORKER_METRICS_PORT` | `4001` | Worker's own `/metrics` (sends, deferrals, SMTP latency); `0` disables |
 | `MIN_DELAY_BETWEEN_EMAILS_MS` | `2000` | **Minimum gap between sends from the same sender** |
 | `SEND_HOLD_MS` | `35000` | How long a sender's slot stays reserved while a send is in flight |
 | `MAX_EMAILS_PER_HOUR_PER_SENDER` | `200` | Per-sender hourly ceiling |
@@ -459,9 +460,11 @@ sender block and attachment cards.
   15 minutes; jobs are reassigned to a healthy one instead of failing.
 - **Graceful search degradation** — Postgres fallback, with the engine named in
   the response.
-- **Observability** — `/metrics` (deferrals by reason, SMTP latency, queue
-  depth), `/health`, `/ready` with per-dependency status, structured logs with
-  secret redaction.
+- **Observability** — Prometheus metrics from both processes: the worker's
+  `:4001/metrics` (sends, deferrals by reason, SMTP latency) and the API's
+  `/metrics` (queue depth), each series labelled with its `process`. Plus
+  `/health`, `/ready` with per-dependency status, and structured logs with secret
+  redaction.
 - **Multi-tenancy** — every query is scoped by the authenticated user; Slack
   tokens and senders are per-tenant.
 - **Accessibility** — status is never colour alone (dot + label everywhere); the

@@ -24,6 +24,12 @@ const schema = z.object({
 
   // ---- HTTP ----
   PORT: int(4000, 1),
+  /**
+   * Port for the worker's own /metrics. The worker is a separate process with its
+   * own registry, so its send/defer counters never appear on the API's /metrics.
+   * 0 disables it.
+   */
+  WORKER_METRICS_PORT: int(4001, 0),
   PUBLIC_API_URL: z.string().url().default('http://localhost:4000'),
   FRONTEND_URL: z.string().url().default('http://localhost:3000'),
 

@@ -1,7 +1,9 @@
+import { createServer } from 'node:http';
 import { Worker } from 'bullmq';
 import { env } from './config/env.js';
 import { closeDb } from './db/client.js';
 import { logger } from './lib/logger.js';
+import { registry } from './lib/metrics.js';
 import { closeRedis, queueRedis } from './lib/redis.js';
 import { closeTransports } from './mailer/transport.js';
 import { processEmailJob } from './queue/processor.js';
@@ -73,9 +75,41 @@ async function main(): Promise<void> {
   // Repairs Postgres/Redis divergence. See queue/reconciler.ts -- not a cron.
   startReconciler();
 
+  // The worker is a separate process with its own metrics registry, so the
+  // send/defer counters and SMTP latency recorded here never reach the API's
+  // /metrics. Prometheus convention: each process exposes its own endpoint.
+  registry.setDefaultLabels({ process: 'worker' });
+  const metricsServer =
+    env.WORKER_METRICS_PORT > 0
+      ? createServer((req, res) => {
+          if (req.url !== '/metrics') {
+            res.writeHead(404).end();
+            return;
+          }
+          registry.metrics().then(
+            (body) => {
+              res.writeHead(200, { 'Content-Type': registry.contentType });
+              res.end(body);
+            },
+            (err: Error) => {
+              res.writeHead(500).end(err.message);
+            },
+          );
+        })
+          .listen(env.WORKER_METRICS_PORT, () =>
+            log.info({ port: env.WORKER_METRICS_PORT }, 'worker metrics listening'),
+          )
+          // A second worker on the same machine finds the port taken. Metrics
+          // must never stop a worker from sending, so carry on without them.
+          .on('error', (err) =>
+            log.warn({ err: err.message }, 'worker metrics endpoint unavailable; continuing'),
+          )
+      : null;
+
   const shutdown = async (signal: string): Promise<void> => {
     log.info({ signal }, 'shutting down worker');
     stopReconciler();
+    metricsServer?.close();
     // `close()` waits for in-flight jobs to finish rather than killing them
     // mid-send, which is what keeps "no duplicate, no lost email" true across a
     // deploy or a restart.

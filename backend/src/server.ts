@@ -3,6 +3,7 @@ import { env } from './config/env.js';
 import { closeDb } from './db/client.js';
 import { runMigrations } from './db/migrate.js';
 import { logger } from './lib/logger.js';
+import { registry } from './lib/metrics.js';
 import { closeRedis } from './lib/redis.js';
 import { closeQueues } from './queue/queues.js';
 import { closeEvents } from './realtime/events.js';
@@ -18,6 +19,9 @@ const log = logger.child({ proc: 'api' });
  * logged and ignored -- search falls back to Postgres and the API still serves.
  */
 async function main(): Promise<void> {
+  // Every series names the process it came from. The worker records sends and
+  // deferrals and serves them itself; this process reports queue depth.
+  registry.setDefaultLabels({ process: 'api' });
   await runMigrations();
   await ensureIndex();
 
