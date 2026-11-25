@@ -87,43 +87,44 @@
 
 /* ---------------------------------------------------------------- base ---- */
 
-html {
-  background-color: var(--color-canvas);
-}
-
 [data-theme='dark'] {
   color-scheme: dark;
 }
 
-body {
-  background-color: var(--color-canvas);
-  color: var(--color-ink);
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-}
+/*
+ * Element defaults live in Tailwind's base layer on purpose. Tailwind v4 puts
+ * its utilities in a cascade layer, and *unlayered* CSS beats any layered rule
+ * regardless of specificity -- so these resets, when they sat outside a layer,
+ * silently overrode every text-size, text-colour and border-colour utility on
+ * buttons and bordered elements. Form controls already inherit font and colour
+ * from Tailwind's preflight, so they need no reset of their own.
+ */
+@layer base {
+  html {
+    background-color: var(--color-canvas);
+  }
 
-*,
-::before,
-::after {
-  border-color: var(--color-line);
-}
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
 
-:focus-visible {
-  outline: 2px solid var(--color-brand-strong);
-  outline-offset: 2px;
-}
+  *,
+  ::before,
+  ::after {
+    border-color: var(--color-line);
+  }
 
-::selection {
-  background: color-mix(in srgb, var(--color-brand) 28%, transparent);
-}
+  :focus-visible {
+    outline: 2px solid var(--color-brand-strong);
+    outline-offset: 2px;
+  }
 
-/* Inputs must not revert to the UA's light styling in dark mode. */
-input,
-textarea,
-select,
-button {
-  font: inherit;
-  color: inherit;
+  ::selection {
+    background: color-mix(in srgb, var(--color-brand) 28%, transparent);
+  }
 }
 
 ::-webkit-scrollbar {

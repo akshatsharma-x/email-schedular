@@ -641,7 +641,7 @@ function SendLaterPopover({
   return (
     <div
       ref={ref}
-      className="animate-in absolute right-0 top-full z-40 mt-1 w-64 overflow-hidden rounded-xl border border-line bg-surface shadow-xl"
+      className="animate-in absolute right-0 top-full z-40 mt-1 w-72 overflow-hidden rounded-xl border border-line bg-surface shadow-xl"
     >
       <p className="border-b border-line px-3 py-2 text-[13px] font-semibold text-ink">
         Send Later
@@ -655,7 +655,7 @@ function SendLaterPopover({
             value={local}
             onChange={(e) => setLocal(e.target.value)}
             aria-label="Pick date and time"
-            className="w-full bg-transparent text-[12.5px] text-ink focus:outline-none"
+            className="w-full min-w-0 bg-transparent text-[12.5px] text-ink focus:outline-none"
           />
         </label>
 
